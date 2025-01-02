@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vision Board Game (Mobile)</title>
     <style>
-        /* Global Styles */
+        /* Existing styles */
         body {
             margin: 0;
             padding: 0;
@@ -39,21 +39,44 @@
         }
 
         .bottom-bar {
-            flex: 1;
+            flex: 0.5; /* Reduced from 1 to make the bar shorter */
             display: flex;
             justify-content: center;
             align-items: center;
+            gap: 20px;
             background: #fff;
             border-top: 2px solid #e4e3ff;
+            padding: 10px 0;
         }
+
+        .search-icon, .delete-icon {
+            width: 40px; /* Reduced from 60px */
+            height: 40px; /* Reduced from 60px */
+            background-size: contain; /* Changed from cover to contain */
+            background-position: center;
+            background-repeat: no-repeat;
+            cursor: pointer;
+            opacity: 0.8; /* Added slight transparency */
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+
+
+        .search-icon:active, .delete-icon:active {
+            opacity: 1;
+            transform: scale(0.95);
+        }
+
 
         .search-icon {
-            width: 60px;
-            height: 60px;
             background: url('https://cdn-icons-png.flaticon.com/512/622/622669.png') no-repeat center center / cover;
-            cursor: pointer;
         }
 
+        .delete-icon {
+            background: url('https://cdn-icons-png.flaticon.com/512/3096/3096673.png') no-repeat center center / cover;
+        }
+
+        /* Existing search overlay styles */
         .search-overlay {
             position: absolute;
             top: 0;
@@ -78,6 +101,7 @@
             position: relative;
         }
 
+        /* Existing button and input styles */
         .close-search {
             position: absolute;
             top: 10px;
@@ -92,10 +116,6 @@
             cursor: pointer;
         }
 
-        .close-search:hover {
-            background: #ff4a4a;
-        }
-
         .search-container input {
             width: 80%;
             padding: 10px;
@@ -105,6 +125,7 @@
             margin-bottom: 10px;
         }
 
+        /* Existing suggestions and results styles */
         .suggestions {
             display: flex;
             flex-wrap: wrap;
@@ -125,10 +146,6 @@
             white-space: nowrap;
         }
 
-        .suggestion:hover {
-            background-color: #c9c5ff;
-        }
-
         .results {
             display: flex;
             flex-wrap: wrap;
@@ -145,6 +162,7 @@
             cursor: pointer;
         }
 
+        /* New delete mode styles */
         .item {
             width: 120px;
             height: 120px;
@@ -154,6 +172,16 @@
             border-radius: 10px;
             cursor: grab;
             touch-action: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .delete-mode .item {
+            cursor: pointer;
+        }
+
+        .item.selected-for-delete {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 3px #ff6b6b;
         }
 
         .resize-handle {
@@ -166,14 +194,116 @@
             right: 0;
             border-radius: 50%;
         }
+
+        /* Delete confirmation overlay */
+        .delete-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .delete-confirmation {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .delete-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .delete-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .confirm-delete {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .cancel-delete {
+            background: #e4e3ff;
+            color: #6c63ff;
+        }
+
+        /* Delete mode active indicator */
+        .delete-mode-active {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff6b6b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 999;
+            display: none;
+        }
+
+/* Add download icon styles */
+        .download-icon {
+            width: 40px;
+            height: 40px;
+            background: url('https://cdn-icons-png.flaticon.com/512/724/724933.png') no-repeat center center;
+            background-size: contain;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .download-icon:active {
+            opacity: 1;
+            transform: scale(0.95);
+        }
+
+        /* Add download progress indicator */
+        .download-progress {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 1002;
+            display: none;
+        }
+
     </style>
 </head>
 <body>
     <div class="vision-board-container">
+        <div class="delete-mode-active" id="deleteModeIndicator">
+            Select images to delete
+        </div>
+<div class="download-progress" id="downloadProgress">
+            Preparing your vision board...
+        </div>
+
         <div class="board" id="board"></div>
 
         <div class="bottom-bar">
             <div class="search-icon" id="searchIcon"></div>
+            <div class="delete-icon" id="deleteIcon"></div>
+<div class="download-icon" id="downloadIcon"></div>
         </div>
 
         <div class="search-overlay" id="searchOverlay">
@@ -190,20 +320,40 @@
                 <div class="results" id="results"></div>
             </div>
         </div>
+
+        <div class="delete-overlay" id="deleteOverlay">
+            <div class="delete-confirmation">
+                <h3>Delete Selected Images</h3>
+                <p>Are you sure you want to delete the selected images?</p>
+                <div class="delete-buttons">
+                    <button class="confirm-delete" id="confirmDelete">Delete</button>
+                    <button class="cancel-delete" id="cancelDelete">Cancel</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
+     <script>
         const board = document.getElementById('board');
         const results = document.getElementById('results');
         const searchInput = document.getElementById('searchInput');
         const searchIcon = document.getElementById('searchIcon');
+        const deleteIcon = document.getElementById('deleteIcon');
         const searchOverlay = document.getElementById('searchOverlay');
+        const deleteOverlay = document.getElementById('deleteOverlay');
         const closeSearch = document.getElementById('closeSearch');
         const suggestions = document.getElementById('suggestions');
+        const deleteModeIndicator = document.getElementById('deleteModeIndicator');
+        const confirmDelete = document.getElementById('confirmDelete');
+        const cancelDelete = document.getElementById('cancelDelete');
 
         const PEXELS_API_KEY = 'aG1p0sDYJnDp04TICSTZuhLuMso6dIUZDNJ9mdlAkxQ2E9QXziHTT5l8';
         const PEXELS_API_URL = 'https://api.pexels.com/v1/search';
 
+        let isDeleteMode = false;
+        let selectedForDelete = new Set();
+
+        // Search functionality
         async function fetchImages(query) {
             const response = await fetch(`${PEXELS_API_URL}?query=${query}&per_page=10`, {
                 headers: { Authorization: PEXELS_API_KEY },
@@ -222,18 +372,81 @@
                 imgDiv.style.backgroundImage = `url(${photo.src.medium})`;
                 imgDiv.addEventListener('click', () => {
                     addToBoard(photo.src.medium);
-                    searchOverlay.style.display = 'none'; // Hide search overlay
+                    searchOverlay.style.display = 'none';
                 });
                 results.appendChild(imgDiv);
             });
         }
 
-        searchIcon.addEventListener('click', () => {
-            searchOverlay.style.display = 'flex';
+        // Delete mode functionality
+        function toggleDeleteMode() {
+            isDeleteMode = !isDeleteMode;
+            board.classList.toggle('delete-mode', isDeleteMode);
+            deleteModeIndicator.style.display = isDeleteMode ? 'block' : 'none';
+            
+            if (!isDeleteMode) {
+                // Clear selections when exiting delete mode
+                selectedForDelete.clear();
+                document.querySelectorAll('.item').forEach(item => {
+                    item.classList.remove('selected-for-delete');
+                });
+            }
+        }
+
+        function handleItemClick(item, event) {
+            if (!isDeleteMode) return;
+            
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (selectedForDelete.has(item)) {
+                selectedForDelete.delete(item);
+                item.classList.remove('selected-for-delete');
+            } else {
+                selectedForDelete.add(item);
+                item.classList.add('selected-for-delete');
+            }
+
+            if (selectedForDelete.size > 0) {
+                deleteOverlay.style.display = 'flex';
+            }
+        }
+
+        // Event Listeners
+        searchIcon.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            if (!isDeleteMode) { // Only allow search when not in delete mode
+                searchOverlay.style.display = 'flex';
+            }
+        });
+
+        deleteIcon.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            if (searchOverlay.style.display === 'flex') {
+                searchOverlay.style.display = 'none';
+            }
+            toggleDeleteMode();
         });
 
         closeSearch.addEventListener('click', () => {
             searchOverlay.style.display = 'none';
+        });
+
+        confirmDelete.addEventListener('click', () => {
+            selectedForDelete.forEach(item => {
+                item.remove();
+            });
+            selectedForDelete.clear();
+            deleteOverlay.style.display = 'none';
+            toggleDeleteMode();
+        });
+
+        cancelDelete.addEventListener('click', () => {
+            selectedForDelete.forEach(item => {
+                item.classList.remove('selected-for-delete');
+            });
+            selectedForDelete.clear();
+            deleteOverlay.style.display = 'none';
         });
 
         suggestions.addEventListener('click', (event) => {
@@ -249,6 +462,7 @@
             if (query) displayResults(query);
         });
 
+        // Adding images to board
         function addToBoard(imageUrl) {
             const item = document.createElement('div');
             item.classList.add('item');
@@ -260,15 +474,18 @@
             resizeHandle.classList.add('resize-handle');
             item.appendChild(resizeHandle);
 
+            item.addEventListener('click', (e) => handleItemClick(item, e));
             enableDragAndResize(item);
             board.appendChild(item);
         }
 
+        // Drag and resize functionality
         function enableDragAndResize(item) {
             let isDragging = false, isResizing = false;
             let startX, startY, startWidth, startHeight;
 
             const startDrag = (e) => {
+                if (isDeleteMode) return;
                 e.preventDefault();
                 isDragging = true;
                 startX = e.clientX || e.touches[0].clientX;
@@ -299,6 +516,7 @@
             };
 
             const startResize = (e) => {
+                if (isDeleteMode) return;
                 e.preventDefault();
                 e.stopPropagation();
                 isResizing = true;
@@ -336,6 +554,85 @@
             resizeHandle.addEventListener('mousedown', startResize);
             resizeHandle.addEventListener('touchstart', startResize, { passive: false });
         }
+
+        // Close overlays when clicking outside
+        searchOverlay.addEventListener('click', (e) => {
+            if (e.target === searchOverlay) {
+                searchOverlay.style.display = 'none';
+            }
+        });
+
+        deleteOverlay.addEventListener('click', (e) => {
+            if (e.target === deleteOverlay) {
+                deleteOverlay.style.display = 'none';
+            }
+        });
+
+ const downloadIcon = document.getElementById('downloadIcon');
+        const downloadProgress = document.getElementById('downloadProgress');
+
+        async function downloadVisionBoard() {
+            if (isDeleteMode) return; // Prevent download during delete mode
+
+            // Show progress indicator
+            downloadProgress.style.display = 'block';
+
+            try {
+                // Temporarily hide any UI elements that shouldn't be in the screenshot
+                deleteModeIndicator.style.display = 'none';
+                
+                // Create a clone of the board for capturing
+                const boardClone = board.cloneNode(true);
+                const container = document.createElement('div');
+                container.style.position = 'fixed';
+                container.style.left = '-9999px';
+                container.style.top = '0';
+                container.appendChild(boardClone);
+                document.body.appendChild(container);
+
+                // Set the clone's size to match the original
+                const boardRect = board.getBoundingClientRect();
+                boardClone.style.width = boardRect.width + 'px';
+                boardClone.style.height = boardRect.height + 'px';
+                boardClone.style.background = '#f8f3ec'; // Match board background
+
+                // Capture the board
+                const canvas = await html2canvas(boardClone, {
+                    backgroundColor: '#f8f3ec',
+                    scale: 2, // Higher quality
+                    logging: false,
+                    useCORS: true
+                });
+
+                // Clean up
+                document.body.removeChild(container);
+                deleteModeIndicator.style.display = isDeleteMode ? 'block' : 'none';
+
+                // Convert to blob
+                canvas.toBlob((blob) => {
+                    // Create download link
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'my-vision-board.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    // Hide progress indicator
+                    downloadProgress.style.display = 'none';
+                }, 'image/png');
+
+            } catch (error) {
+                console.error('Error downloading vision board:', error);
+                downloadProgress.style.display = 'none';
+                alert('Sorry, there was an error downloading your vision board. Please try again.');
+            }
+        }
+
+        downloadIcon.addEventListener('click', downloadVisionBoard);
+
     </script>
 </body>
 </html>
