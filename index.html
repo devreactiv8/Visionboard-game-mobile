@@ -666,65 +666,71 @@
  const downloadIcon = document.getElementById('downloadIcon');
         const downloadProgress = document.getElementById('downloadProgress');
 
-        async function downloadVisionBoard() {
-            if (isDeleteMode) return; // Prevent download during delete mode
+ async function downloadVisionBoard() {
+        if (isDeleteMode) return; // Prevent download during delete mode
 
-            // Show progress indicator
-            downloadProgress.style.display = 'block';
+        // Show progress indicator
+        downloadProgress.style.display = 'block';
 
-            try {
-                // Temporarily hide any UI elements that shouldn't be in the screenshot
-                deleteModeIndicator.style.display = 'none';
-                
-                // Create a clone of the board for capturing
-                const boardClone = board.cloneNode(true);
-                const container = document.createElement('div');
-                container.style.position = 'fixed';
-                container.style.left = '-9999px';
-                container.style.top = '0';
-                container.appendChild(boardClone);
-                document.body.appendChild(container);
+        try {
+            // Temporarily hide any UI elements that shouldn't be in the screenshot
+            deleteModeIndicator.style.display = 'none';
+            
+            // Create a clone of the board for capturing
+            const boardClone = board.cloneNode(true);
+            const container = document.createElement('div');
+            container.style.position = 'fixed';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+            container.appendChild(boardClone);
+            document.body.appendChild(container);
 
-                // Set the clone's size to match the original
-                const boardRect = board.getBoundingClientRect();
-                boardClone.style.width = boardRect.width + 'px';
-                boardClone.style.height = boardRect.height + 'px';
-                boardClone.style.background = '#f8f3ec'; // Match board background
+            // Hide all resize handles in the clone
+            const resizeHandles = boardClone.querySelectorAll('.resize-handle');
+            resizeHandles.forEach(handle => {
+                handle.style.display = 'none';
+            });
 
-                // Capture the board
-                const canvas = await html2canvas(boardClone, {
-                    backgroundColor: '#f8f3ec',
-                    scale: 2, // Higher quality
-                    logging: false,
-                    useCORS: true
-                });
+            // Set the clone's size to match the original
+            const boardRect = board.getBoundingClientRect();
+            boardClone.style.width = boardRect.width + 'px';
+            boardClone.style.height = boardRect.height + 'px';
+            boardClone.style.background = '#f8f3ec'; // Match board background
 
-                // Clean up
-                document.body.removeChild(container);
-                deleteModeIndicator.style.display = isDeleteMode ? 'block' : 'none';
+            // Capture the board
+            const canvas = await html2canvas(boardClone, {
+                backgroundColor: '#f8f3ec',
+                scale: 2, // Higher quality
+                logging: false,
+                useCORS: true
+            });
 
-                // Convert to blob
-                canvas.toBlob((blob) => {
-                    // Create download link
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = 'my-vision-board.png';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
+            // Clean up
+            document.body.removeChild(container);
+            deleteModeIndicator.style.display = isDeleteMode ? 'block' : 'none';
 
-                    // Hide progress indicator
-                    downloadProgress.style.display = 'none';
-                }, 'image/png');
+            // Convert to blob
+            canvas.toBlob((blob) => {
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'my-vision-board.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
 
-            } catch (error) {
-                console.error('Error downloading vision board:', error);
+                // Hide progress indicator
                 downloadProgress.style.display = 'none';
-                alert('Sorry, there was an error downloading your vision board. Please try again.');
-            }
+            }, 'image/png');
+
+        } catch (error) {
+            console.error('Error downloading vision board:', error);
+            downloadProgress.style.display = 'none';
+            alert('Sorry, there was an error downloading your vision board. Please try again.');
         }
+    }
 
         downloadIcon.addEventListener('click', downloadVisionBoard);
 
